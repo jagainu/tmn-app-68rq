@@ -5,9 +5,8 @@ import { Plus } from 'lucide-react'
 import { Memo } from '@/types/memo'
 import { MemoCard } from '@/components/memo-card'
 import { Button } from '@/components/ui/button'
+import { getMemos, deleteMemo } from '@/lib/memo-storage'
 import Link from 'next/link'
-
-const STORAGE_KEY = 'tmn-memos'
 
 export default function HomePage() {
   const [memos, setMemos] = useState<Memo[]>([])
@@ -15,32 +14,17 @@ export default function HomePage() {
 
   // メモをlocalStorageから読み込み
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedMemos = localStorage.getItem(STORAGE_KEY)
-      if (savedMemos) {
-        try {
-          const parsedMemos = JSON.parse(savedMemos) as Memo[]
-          // 日付でソート（新しいものから）
-          const sortedMemos = parsedMemos.sort((a, b) => 
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-          )
-          setMemos(sortedMemos)
-        } catch (error) {
-          console.error('Failed to parse memos from localStorage:', error)
-          setMemos([])
-        }
-      }
-      setIsLoading(false)
-    }
+    const loadedMemos = getMemos()
+    setMemos(loadedMemos)
+    setIsLoading(false)
   }, [])
 
   // メモ削除のハンドラ
   const handleDeleteMemo = (id: string) => {
-    const updatedMemos = memos.filter(memo => memo.id !== id)
-    setMemos(updatedMemos)
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedMemos))
+    const success = deleteMemo(id)
+    if (success) {
+      const updatedMemos = getMemos()
+      setMemos(updatedMemos)
     }
   }
 

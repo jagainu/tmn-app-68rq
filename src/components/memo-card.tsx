@@ -1,11 +1,11 @@
 'use client'
 
-import { formatDistanceToNow } from '@/lib/utils'
-import { Memo } from '@/types/memo'
-import { Edit, Trash2 } from 'lucide-react'
+import React from 'react'
 import Link from 'next/link'
-import { Button } from './ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { Trash2, Edit, Calendar } from 'lucide-react'
+import { Memo } from '@/types/memo'
+import { Button } from '@/components/ui/button'
+import { formatDate } from '@/lib/utils'
 
 interface MemoCardProps {
   memo: Memo
@@ -13,53 +13,53 @@ interface MemoCardProps {
 }
 
 export function MemoCard({ memo, onDelete }: MemoCardProps) {
-  const handleDeleteClick = () => {
-    if (confirm('このメモを削除しますか？')) {
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (window.confirm('このメモを削除しますか？')) {
       onDelete(memo.id)
     }
   }
 
-  const truncateContent = (content: string, maxLength: number = 150) => {
-    if (content.length <= maxLength) return content
-    return content.substring(0, maxLength) + '...'
-  }
+  // コンテンツのプレビュー（最初の100文字）
+  const contentPreview = memo.content.length > 100 
+    ? memo.content.substring(0, 100) + '...' 
+    : memo.content
 
   return (
-    <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
-      <CardHeader className="flex-none">
-        <CardTitle className="line-clamp-2 text-lg">
-          {memo.title}
-        </CardTitle>
-        <CardDescription>
-          {formatDistanceToNow(new Date(memo.updatedAt))}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
-        <div className="flex-1">
-          {memo.content && (
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {truncateContent(memo.content)}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-          <Link href={`/edit/${memo.id}`} className="flex-1">
-            <Button variant="outline" size="sm" className="w-full flex items-center gap-2">
-              <Edit size={16} />
-              編集
+    <div className="bg-card text-card-foreground rounded-lg border shadow-sm hover:shadow-md transition-shadow">
+      <div className="p-6">
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+            {memo.title || '無題のメモ'}
+          </h3>
+          <div className="flex gap-1 flex-shrink-0">
+            <Link href={`/edit/${memo.id}`}>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Edit size={16} />
+              </Button>
+            </Link>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+              onClick={handleDelete}
+            >
+              <Trash2 size={16} />
             </Button>
-          </Link>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleDeleteClick}
-            className="text-destructive hover:text-destructive-foreground hover:bg-destructive flex items-center gap-2"
-          >
-            <Trash2 size={16} />
-            削除
-          </Button>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+        
+        {memo.content && (
+          <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
+            {contentPreview}
+          </p>
+        )}
+        
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Calendar size={12} />
+          <span>更新: {formatDate(memo.updatedAt)}</span>
+        </div>
+      </div>
+    </div>
   )
 }
