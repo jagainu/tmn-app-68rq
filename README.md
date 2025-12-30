@@ -1,6 +1,6 @@
 # TMN Memo - シンプルなメモアプリ
 
-Next.js 14とVercel KVを使用したシンプルで使いやすいメモアプリケーションです。
+Next.js 14とlocalStorageを使用したシンプルで使いやすいメモアプリケーションです。
 
 ## 機能
 
@@ -9,15 +9,16 @@ Next.js 14とVercel KVを使用したシンプルで使いやすいメモアプ�
 - ✅ メモ削除
 - ✅ メモ一覧表示
 - ✅ レスポンシブデザイン
-- ✅ モダンなUI（shadcn/ui）
+- ✅ データ永続化（localStorage）
+- ✅ モダンなUI（Tailwind CSS）
 
 ## 技術スタック
 
-- **フレームワーク**: Next.js 14 (App Router)
+- **フレームワーク**: Next.js 14.2.5 (App Router)
 - **言語**: TypeScript
-- **スタイリング**: Tailwind CSS + shadcn/ui
-- **データベース**: Vercel KV
-- **デプロイ**: Vercel
+- **スタイリング**: Tailwind CSS
+- **アイコン**: Lucide React
+- **データ保存**: localStorage
 
 ## セットアップ
 
@@ -25,7 +26,7 @@ Next.js 14とVercel KVを使用したシンプルで使いやすいメモアプ�
 
 ```bash
 git clone <repository-url>
-cd tmn-memo-240103
+cd tmn-memo
 ```
 
 ### 2. 依存関係のインストール
@@ -38,23 +39,7 @@ yarn install
 pnpm install
 ```
 
-### 3. 環境変数の設定
-
-`.env.example`を`.env.local`にコピーし、Vercel KVの認証情報を設定してください：
-
-```bash
-cp .env.example .env.local
-```
-
-`.env.local`を編集：
-
-```env
-KV_REST_API_URL=your_actual_kv_rest_api_url
-KV_REST_API_TOKEN=your_actual_kv_rest_api_token
-KV_REST_API_READ_ONLY_TOKEN=your_actual_kv_read_only_token
-```
-
-### 4. 開発サーバーの起動
+### 3. 開発サーバーの起動
 
 ```bash
 npm run dev
@@ -65,25 +50,6 @@ pnpm dev
 ```
 
 ブラウザで [http://localhost:3000](http://localhost:3000) を開いてください。
-
-## Vercel KVのセットアップ
-
-1. [Vercel Dashboard](https://vercel.com/dashboard) にログイン
-2. プロジェクトを選択
-3. "Storage" タブに移動
-4. "Create Database" > "KV" を選択
-5. データベース名を入力して作成
-6. "Settings" タブで環境変数を確認し、`.env.local`に設定
-
-## デプロイ
-
-### Vercelでのデプロイ
-
-1. GitHubリポジトリをVercelに接続
-2. 環境変数を設定
-3. デプロイ
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
 
 ## 使用方法
 
@@ -106,21 +72,48 @@ pnpm dev
 ```
 src/
 ├── app/
-│   ├── actions/          # Server Actions
 │   ├── edit/[id]/        # メモ編集ページ
 │   ├── new/              # 新規メモ作成ページ
 │   ├── globals.css       # グローバルスタイル
 │   ├── layout.tsx        # ルートレイアウト
 │   └── page.tsx          # トップページ（メモ一覧）
 ├── components/
-│   ├── ui/               # shadcn/uiコンポーネント
-│   └── delete-memo-button.tsx
+│   ├── ui/               # UIコンポーネント
+│   └── memo-card.tsx     # メモカードコンポーネント
 ├── lib/
 │   └── utils.ts          # ユーティリティ関数
 └── types/
     └── memo.ts           # 型定義
 ```
 
+## 特徴
+
+- **シンプルな操作**: 直感的なUIでストレスなくメモを管理
+- **レスポンシブデザイン**: デスクトップ・モバイル両対応
+- **高速**: localStorageによる高速なデータ読み込み
+- **プライバシー**: データは全てブラウザ内に保存
+- **オフライン対応**: ネット接続不要で利用可能
+
 ## ライセンス
 
 MIT
+
+## 開発者向け情報
+
+### ビルド
+
+```bash
+npm run build
+```
+
+### 本番環境での実行
+
+```bash
+npm run start
+```
+
+### コードの品質チェック
+
+```bash
+npm run lint
+```

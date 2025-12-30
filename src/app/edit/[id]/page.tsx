@@ -1,119 +1,175 @@
-import { kv } from '@vercel/kv';
-import { notFound, redirect } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Memo } from '@/types/memo';
-import { updateMemo } from '@/app/actions/memo';
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, Save } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Memo } from '@/types/memo'
+import Link from 'next/link'
+
+const STORAGE_KEY = 'tmn-memos'
 
 interface EditMemoPageProps {
   params: {
-    id: string;
-  };
-}
-
-async function getMemo(id: string): Promise<Memo | null> {
-  try {
-    const memo = await kv.get<Memo>(`memo:${id}`);
-    return memo;
-  } catch (error) {
-    console.error('Failed to fetch memo:', error);
-    return null;
+    id: string
   }
 }
 
-export default async function EditMemoPage({ params }: EditMemoPageProps) {
-  const memo = await getMemo(params.id);
+export default function EditMemoPage({ params }: EditMemoPageProps) {
+  const [memo, setMemo] = useState<Memo | null>(null)
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const router = useRouter()
 
-  if (!memo) {
-    notFound();
-  }
+  // メモを読み込み
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedMemos = localStorage.getItem(STORAGE_KEY)
+      if (savedMemos) {
+        try {
+          const memos: Memo[] = JSON.parse(savedMemos)
+          const foundMemo = memos.find(m => m.id === params.id)
+          if (foundMemo) {
+            setMemo(foundMemo)
+            setTitle(foundMemo.title)
+            setContent(foundMemo.content)
+          }
+        } catch (error) {
+          console.error('Failed to load memo:', error)
+        }
+      }
+      setIsInitialLoading(false)
+    }
+  }, [params.id])
 
-  async function handleUpdateMemo(formData: FormData) {
-    'use server';
-    
-    const title = formData.get('title') as string;
-    const content = formData.get('content') as string;
+  const handleSave = async () => {
+    if (!title.trim()) {
+      alert('タイトルを入力してください')
+      return
+    }
+
+    if (!memo) {
+      alert('メモが見つかりません')
+      return
+    }
+
+    setIsLoading(true)
 
     try {
-      await updateMemo(params.id, { 
-        title: title.trim(), 
-        content: content.trim() 
-      });
-      redirect('/');
+      // 既存のメモを取得
+      let existingMemos: Memo[] = []
+      if (typeof window !== 'undefined') {
+        const savedMemos = localStorage.getItem(STORAGE_KEY)
+        if (savedMemos) {
+          existingMemos = JSON.parse(savedMemos)
+        }
+      }
+
+      // メモを更新
+      const updatedMemo: Memo = {
+        ...memo,
+        title: title.trim(),
+        content: content.trim(),
+        updatedAt: new Date().toISOString(),
+      }
+
+      const updatedMemos = existingMemos.map(m => 
+        m.id === memo.id ? updatedMemo : m
+      )
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedMemos))
+      }
+
+      router.push('/')
     } catch (error) {
-      console.error('Failed to update memo:', error);
+      console.error('Failed to update memo:', error)
+      alert('メモの更新に失敗しました')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+  if (isInitialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-muted-foreground">読み込み中...</div>
+      </div>
+    )
+  }
+
+  if (!memo) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-muted-foreground mb-4">
+          メモが見つかりません
+        </div>
         <Link href="/">
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            戻る
+          <Button>
+            ホームに戻る
           </Button>
         </Link>
-        <h2 className="text-3xl font-bold text-gray-900">メモを編集</h2>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft size={20} />
+            </Button>
+          </Link>
+          <h2 className="text-3xl font-bold tracking-tight">メモを編集</h2>
+        </div>
+        <Button 
+          onClick={handleSave} 
+          disabled={isLoading || !title.trim()}
+          className="flex items-center gap-2"
+        >
+          <Save size={20} />
+          {isLoading ? '更新中...' : '更新'}
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>メモを編集</CardTitle>
-          <p className="text-sm text-gray-500">
-            作成: {new Date(memo.createdAt).toLocaleDateString('ja-JP', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form action={handleUpdateMemo} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">タイトル</Label>
-              <Input
-                id="title"
-                name="title"
-                defaultValue={memo.title}
-                placeholder="メモのタイトルを入力してください"
-                className="text-lg"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="content">内容</Label>
-              <Textarea
-                id="content"
-                name="content"
-                defaultValue={memo.content}
-                placeholder="メモの内容を入力してください"
-                rows={12}
-                className="resize-none"
-              />
-            </div>
-            
-            <div className="flex justify-end gap-3">
-              <Link href="/">
-                <Button type="button" variant="outline">
-                  キャンセル
-                </Button>
-              </Link>
-              <Button type="submit" className="flex items-center gap-2">
-                <Save className="w-4 h-4" />
-                更新
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      {/* フォーム */}
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <label htmlFor="title" className="text-sm font-medium">
+            タイトル *
+          </label>
+          <Input
+            id="title"
+            type="text"
+            placeholder="メモのタイトルを入力してください"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="text-lg"
+            autoFocus
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="content" className="text-sm font-medium">
+            内容
+          </label>
+          <Textarea
+            id="content"
+            placeholder="メモの内容を入力してください"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={15}
+            className="resize-none"
+          />
+        </div>
+      </div>
     </div>
-  );
+  )
 }
