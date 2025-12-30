@@ -1,38 +1,53 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { createMemo } from '@/lib/memo-storage'
-import Link from 'next/link'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Save } from 'lucide-react';
+import Link from 'next/link';
+import { saveMemo } from '@/lib/memo-storage';
+import { generateId } from '@/lib/utils';
+import { Memo } from '@/types/memo';
 
 export default function NewMemoPage() {
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const router = useRouter()
+  const router = useRouter();
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = async () => {
-    if (!title.trim() && !content.trim()) {
-      alert('タイトルまたは内容を入力してください')
-      return
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim()) {
+      alert('タイトルを入力してください');
+      return;
     }
-
-    setIsSaving(true)
+    
+    setIsSaving(true);
+    
     try {
-      createMemo({
-        title: title.trim() || '無題のメモ',
-        content: content.trim()
-      })
-      router.push('/')
+      const now = new Date().toISOString();
+      const newMemo: Memo = {
+        id: generateId(),
+        title: title.trim(),
+        content: content.trim(),
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      const success = saveMemo(newMemo);
+      if (success) {
+        router.push('/');
+      } else {
+        alert('メモの保存に失敗しました');
+      }
     } catch (error) {
-      console.error('Failed to create memo:', error)
-      alert('メモの保存に失敗しました')
+      console.error('Error saving memo:', error);
+      alert('メモの保存中にエラーが発生しました');
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -40,42 +55,44 @@ export default function NewMemoPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="icon">
+            <Button variant="outline" size="icon">
               <ArrowLeft size={20} />
             </Button>
           </Link>
           <h1 className="text-2xl font-bold">新しいメモ</h1>
         </div>
         <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
+          onClick={handleSubmit} 
+          disabled={isSaving || !title.trim()}
           className="flex items-center gap-2"
         >
-          <Save size={16} />
+          <Save size={20} />
           {isSaving ? '保存中...' : '保存'}
         </Button>
       </div>
 
-      {/* メモフォーム */}
-      <div className="space-y-4">
+      {/* フォーム */}
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <input
             type="text"
-            placeholder="メモのタイトル"
+            placeholder="メモのタイトルを入力..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-3 text-lg font-semibold bg-transparent border-none outline-none placeholder:text-muted-foreground"
+            className="w-full text-2xl font-bold border-none outline-none bg-transparent placeholder:text-muted-foreground"
+            autoFocus
           />
         </div>
-        <div>
+        
+        <div className="border-t pt-4">
           <textarea
-            placeholder="メモの内容を入力してください..."
+            placeholder="メモの内容を入力..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full h-96 p-3 bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground"
+            className="w-full min-h-96 border-none outline-none bg-transparent placeholder:text-muted-foreground resize-none"
           />
         </div>
-      </div>
+      </form>
     </div>
-  )
+  );
 }

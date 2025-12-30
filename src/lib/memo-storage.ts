@@ -1,92 +1,61 @@
-'use client'
+import { Memo } from '@/types/memo';
 
-import { Memo } from '@/types/memo'
-import { generateId } from '@/lib/utils'
-
-const STORAGE_KEY = 'tmn-memos'
+const STORAGE_KEY = 'tmn-memo-storage';
 
 export function getMemos(): Memo[] {
-  if (typeof window === 'undefined') return []
+  if (typeof window === 'undefined') return [];
   
   try {
-    const savedMemos = localStorage.getItem(STORAGE_KEY)
-    if (!savedMemos) return []
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return [];
     
-    const parsedMemos = JSON.parse(savedMemos) as Memo[]
-    return parsedMemos.sort((a, b) => 
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    )
+    const memos = JSON.parse(stored) as Memo[];
+    // 更新日時でソート（新しい順）
+    return memos.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   } catch (error) {
-    console.error('Failed to parse memos from localStorage:', error)
-    return []
+    console.error('Failed to load memos:', error);
+    return [];
   }
 }
 
-export function saveMemos(memos: Memo[]): void {
-  if (typeof window === 'undefined') return
+export function saveMemo(memo: Memo): boolean {
+  if (typeof window === 'undefined') return false;
   
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(memos))
+    const memos = getMemos();
+    const existingIndex = memos.findIndex(m => m.id === memo.id);
+    
+    if (existingIndex >= 0) {
+      // 既存のメモを更新
+      memos[existingIndex] = memo;
+    } else {
+      // 新しいメモを追加
+      memos.push(memo);
+    }
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
+    return true;
   } catch (error) {
-    console.error('Failed to save memos to localStorage:', error)
+    console.error('Failed to save memo:', error);
+    return false;
   }
-}
-
-export function createMemo(data: { title: string; content: string }): Memo {
-  const id = generateId()
-  const now = new Date().toISOString()
-  
-  const memo: Memo = {
-    id,
-    title: data.title,
-    content: data.content,
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  const memos = getMemos()
-  const updatedMemos = [memo, ...memos]
-  saveMemos(updatedMemos)
-  
-  return memo
-}
-
-export function updateMemo(id: string, data: { title: string; content: string }): Memo | null {
-  const memos = getMemos()
-  const memoIndex = memos.findIndex(memo => memo.id === id)
-  
-  if (memoIndex === -1) {
-    console.error('Memo not found')
-    return null
-  }
-
-  const updatedMemo: Memo = {
-    ...memos[memoIndex],
-    title: data.title,
-    content: data.content,
-    updatedAt: new Date().toISOString(),
-  }
-
-  memos[memoIndex] = updatedMemo
-  saveMemos(memos)
-  
-  return updatedMemo
 }
 
 export function deleteMemo(id: string): boolean {
-  const memos = getMemos()
-  const filteredMemos = memos.filter(memo => memo.id !== id)
+  if (typeof window === 'undefined') return false;
   
-  if (filteredMemos.length === memos.length) {
-    console.error('Memo not found')
-    return false
+  try {
+    const memos = getMemos();
+    const filteredMemos = memos.filter(m => m.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredMemos));
+    return true;
+  } catch (error) {
+    console.error('Failed to delete memo:', error);
+    return false;
   }
-
-  saveMemos(filteredMemos)
-  return true
 }
 
-export function getMemoById(id: string): Memo | null {
-  const memos = getMemos()
-  return memos.find(memo => memo.id === id) || null
+export function getMemo(id: string): Memo | null {
+  const memos = getMemos();
+  return memos.find(m => m.id === id) || null;
 }
