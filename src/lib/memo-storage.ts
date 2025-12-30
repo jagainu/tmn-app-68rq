@@ -35,6 +35,28 @@ export function getMemo(id: string): Memo | null {
   return memos.find(memo => memo.id === id) || null
 }
 
+export function saveMemo(memo: Memo): boolean {
+  if (typeof window === 'undefined') return false
+  
+  try {
+    const memos = getMemos()
+    const existingIndex = memos.findIndex(m => m.id === memo.id)
+    
+    if (existingIndex >= 0) {
+      // 既存のメモを更新
+      memos[existingIndex] = memo
+    } else {
+      // 新しいメモを先頭に追加
+      memos.unshift(memo)
+    }
+    
+    return saveMemos(memos)
+  } catch (error) {
+    console.error('Failed to save memo:', error)
+    return false
+  }
+}
+
 export function createMemo(data: CreateMemoData): Memo {
   const now = new Date().toISOString()
   const memo: Memo = {
