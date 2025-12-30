@@ -14,19 +14,29 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteMemo } from '@/app/actions/memo';
+import { deleteMemo } from '@/lib/memo-storage';
 
 interface DeleteMemoButtonProps {
   memoId: string;
+  onDelete?: (memoId: string) => void;
 }
 
-export function DeleteMemoButton({ memoId }: DeleteMemoButtonProps) {
+export function DeleteMemoButton({ memoId, onDelete }: DeleteMemoButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deleteMemo(memoId);
+      const success = deleteMemo(memoId);
+      if (success) {
+        // 親コンポーネントに削除完了を通知
+        if (onDelete) {
+          onDelete(memoId);
+        } else {
+          // 親コンポーネントがない場合はページをリロード
+          window.location.reload();
+        }
+      }
     } catch (error) {
       console.error('Failed to delete memo:', error);
     } finally {
