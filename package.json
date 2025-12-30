@@ -9,12 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.2.21",
+    "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18",
     "lucide-react": "^0.400",
     "clsx": "^2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
+    "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-slot": "^1.0.2",
     "class-variance-authority": "^0.7.0"
   },
